@@ -615,6 +615,7 @@ public final class DatenDownload implements Comparable<DatenDownload> {
     private String replaceExec(String befehlsString) {
         befehlsString = StringUtils.replace(befehlsString, "**", arr[DatenDownload.DOWNLOAD_ZIEL_PFAD_DATEINAME]);
         befehlsString = StringUtils.replace(befehlsString, "%f", arr[DOWNLOAD_URL]);
+        befehlsString = StringUtils.replace(befehlsString, "%u", arr[DOWNLOAD_URL_SUBTITLE]);
         //FIXME %F needs to be removed as we no longer use flvstreamer
         befehlsString = StringUtils.replace(befehlsString, "%F", arr[DOWNLOAD_URL_RTMP]);
         befehlsString = StringUtils.replace(befehlsString, "%a", arr[DOWNLOAD_ZIEL_PFAD]);
