@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+#  Helper wrapper to download subs file if given as second argument
+#  and launch vlc with it if it is xml
+#  enter into sets bearbeiten/linux abspielen/Hilfsprogramme $PATH_TO_SCRIPT/playvlc, 
+#   schalter %f %u
+#
+
+#ECHO=echo
+#LOGGING=1
+
+SUBS=""
+
+trap cleanup SIGTERM SIGKILL SIGINT exit
+
+cleanup() {
+	[[ -f $XML ]] && rm -f $XML
+}
+
+# need to split $@ explicitly
+arr=( $@ )
+XML=$(mktemp -u --suffix=.xml)
+
+if [[ $LOGGING ]];then
+	echo "@: $@" > /tmp/$0.log
+	echo "arr 0: ${arr[0]}" >> /tmp/$0.log
+	echo "arr 1: ${arr[1]}" >> /tmp/$0.log
+	echo "XML: $XML" >> /tmp/$0.log
+fi
+
+# if no sub file then fetches an html error page
+if [[ ${arr[1]} ]];then
+	wget ${arr[1]} -O $XML
+	[[ $(head -n1 $XML|cut -b 3-5) == xml ]] && SUBS="--sub-file=$XML"
+fi
+
+$ECHO vlc ${arr[0]} $SUBS --play-and-exit
+
+
+
+

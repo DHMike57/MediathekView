@@ -1,0 +1,90 @@
+#!/bin/bash
+#
+#  Helper wrapper to download georestricted material
+#  enter into sets bearbeiten/linux abspielen/Hilfsprogramme $PATH_TO_SCRIPT/torget
+#   schalter %f ** %u
+#
+
+#ECHO=echo
+PROG=$(basename $0)
+LOGGING=1
+
+SUBS=""
+COUNTERFILE=/tmp/torgetcnt
+
+
+trap cleanup SIGTERM SIGKILL SIGINT exit
+errexit() {
+	echo "$@"
+	exit
+}
+
+cleanup() {
+	[[ -f $XML ]] && rm -f $XML
+}
+
+###### Utility subs.  Keep a counter everytime this routine is called
+##     allows simultaneous dl/s only killinf tor when the last one has finished
+getcount() {
+	local COUNT=0
+	if [[ -f $COUNTERFILE ]];then
+		COUNT=$(cat $COUNTERFILE)
+	fi
+	echo $COUNT
+}
+
+increment() {
+	local COUNT=0
+	COUNT=$(getcount)
+	COUNT=$(( $COUNT + 1 ))
+	echo $COUNT > $COUNTERFILE
+}
+
+decrement() {
+	local COUNT=1
+	COUNT=$(getcount)
+	if [[ $COUNT -lt 1 ]];then
+		rm -f $COUNTERFILE
+	else
+		COUNT=$(( $COUNT - 1 ))
+		echo $COUNT > $COUNTERFILE
+	fi
+}
+
+
+# need to split $@ explicitly
+arr=( $@ )
+[[ ${arr[0]} ]] || errexit "Usage: $0 url name [subsurl]"
+
+XML=$(mktemp -u --suffix=.xml)
+
+if [[ $LOGGING ]];then
+	echo "@: $@" > /tmp/$PROG.log
+	echo "arr 0: ${arr[0]}" >> /tmp/$PROG.log
+	echo "arr 1: ${arr[1]}" >> /tmp/$PROG.log
+	echo "arr 2: ${arr[2]}" >> /tmp/$PROG.log
+	echo "XML: $XML" >> /tmp/$PROG.log
+fi
+
+# if no sub file then fetches an html error page
+if [[ ${arr[2]} ]];then
+	wget ${arr[2]} -O $XML
+	if [[ $(head -n1 $XML|cut -b 3-5) == xml ]]; then
+		cp "$XML" ${arr[1]%.mp4}.xml
+	fi
+fi
+# if 9050 is open assume tor is already running
+netcat -z -w2 localhost 9050
+if [[ $? -eq 1 ]];then
+	sudo -u tor tor&
+	sleep 2
+fi
+increment
+$ECHO torsocks wget -nv ${arr[0]} -O ${arr[1]}
+decrement
+if [[ $(getcount) -eq 0 ]];then
+	sudo -u tor killall tor
+fi
+
+
+

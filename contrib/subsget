@@ -1,0 +1,40 @@
+#!/bin/bash
+#
+#  Helper wrapper to download subs only
+#  enter into sets bearbeiten/linux abspielen/Hilfsprogramme $PATH_TO_SCRIPT/subsget
+#   schalter %u **
+#
+
+#ECHO=echo
+PROG=$(basename $0)
+LOGGING=1
+
+SUBS=""
+
+
+trap cleanup SIGTERM SIGKILL SIGINT exit
+errexit() {
+	echo "$@"
+	exit
+}
+
+cleanup() {
+	[[ -f $XML ]] && rm -f $XML
+}
+
+
+# need to split $@ explicitly
+arr=( $@ )
+[[ ${arr[0]} ]] || errexit "Usage: $0 subsurl name"
+
+
+if [[ $LOGGING ]];then
+	echo "@: $@" > /tmp/$PROG.log
+	echo "arr 0: ${arr[0]}" >> /tmp/$PROG.log
+	echo "arr 1: ${arr[1]}" >> /tmp/$PROG.log
+fi
+
+$ECHO wget -nv ${arr[0]} -O ${arr[1]%.mp4}.xml
+
+
+
